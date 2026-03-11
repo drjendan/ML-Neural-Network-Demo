@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS655 – Week 9: Neural Networks</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c14;
+  --surface: #0f1724;
+  --surface2: #162032;
+  --border: #1e3050;
+  --cyan: #00d4ff;
+  --cyan-dim: #005577;
+  --orange: #ff7b3a;
+  --green: #00ff9d;
+  --red: #ff4466;
+  --yellow: #ffd166;
+  --text: #cdd6f4;
+  --muted: #5c7095;
+  --mono: 'JetBrains Mono', monospace;
+  --display: 'Syne', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── HEADER ───────────────────────────────────── */
+header {
+  position: relative;
+  padding: 2.5rem 3rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,212,255,0.06) 0%, transparent 100%);
+  z-index: 1;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.chip {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  padding: 0.2rem 0.7rem;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--cyan);
+}
+
+.chip.orange { background: rgba(255,123,58,0.15); color: var(--orange); border-color: var(--orange); }
+
+header h1 {
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+header h1 span { color: var(--cyan); }
+
+.header-sub {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+/* ── NAV TABS ─────────────────────────────────── */
+.tabs {
+  display: flex;
+  gap: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.tab {
+  padding: 0.9rem 1.4rem;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: var(--mono);
+}
+
+.tab:hover { color: var(--cyan); background: rgba(0,212,255,0.04); }
+.tab.active { color: var(--cyan); border-bottom-color: var(--cyan); background: rgba(0,212,255,0.06); }
+
+/* ── SECTIONS ─────────────────────────────────── */
+.section { display: none; padding: 2.5rem 3rem; position: relative; z-index: 1; }
+.section.active { display: block; }
+
+.section-title {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+
+.section-desc {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 2rem;
+  letter-spacing: 0.02em;
+}
+
+/* ── OVERVIEW CARDS ───────────────────────────── */
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.overview-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+
+.overview-card:hover { border-color: var(--cyan-dim); }
+
+.card-num {
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.card-title {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.4rem;
+}
+
+.card-desc { color: var(--muted); font-size: 12px; }
+
+/* ── NETWORK CANVAS SECTION ───────────────────── */
+.network-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.network-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.network-title {
+  font-family: var(--display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.btn {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  padding: 0.45rem 1.1rem;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+
+.btn:hover { background: var(--cyan); color: var(--bg); }
+.btn.orange { background: rgba(255,123,58,0.15); color: var(--orange); border-color: var(--orange); }
+.btn.orange:hover { background: var(--orange); color: var(--bg); }
+.btn.green { background: rgba(0,255,157,0.1); color: var(--green); border-color: var(--green); }
+.btn.green:hover { background: var(--green); color: var(--bg); }
+
+#networkCanvas {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+/* ── STEP-BY-STEP PANEL ───────────────────────── */
+.steps-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 700px) { .steps-panel { grid-template-columns: 1fr; } }
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 4px;
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  opacity: 0.6;
+}
+
+.step-card.active { border-left-color: var(--cyan); opacity: 1; background: var(--surface2); }
+.step-card.done { border-left-color: var(--green); opacity: 0.8; }
+.step-card:hover { opacity: 1; }
+
+.step-num { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; }
+.step-title { font-family: var(--display); font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
+.step-eq { color: var(--cyan); font-size: 12px; font-weight: 600; }
+.step-result { color: var(--green); font-size: 12px; margin-top: 0.2rem; }
+
+/* ── VALUES TABLE ─────────────────────────────── */
+.values-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.values-title { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem; }
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.5rem;
+}
+
+.val-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.3s;
+}
+
+.val-item.highlight { border-color: var(--cyan); background: rgba(0,212,255,0.07); }
+.val-item.updated { border-color: var(--green); background: rgba(0,255,157,0.07); }
+
+.val-name { font-size: 11px; color: var(--muted); }
+.val-num { font-size: 14px; color: var(--cyan); font-weight: 600; }
+.val-num.green { color: var(--green); }
+.val-num.orange { color: var(--orange); }
+.val-num.red { color: var(--red); }
+
+/* ── LOG BOX ──────────────────────────────────── */
+.log-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1rem 1.25rem;
+  height: 130px;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.8;
+}
+
+.log-line { color: var(--muted); }
+.log-line.active { color: var(--cyan); }
+.log-line.success { color: var(--green); }
+.log-line.warn { color: var(--orange); }
+.log-line span { color: var(--yellow); }
+
+/* ── CODE SECTION ─────────────────────────────── */
+.code-tabs {
+  display: flex;
+  gap: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+}
+
+.code-tab {
+  padding: 0.65rem 1.2rem;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+
+.code-tab.active { color: var(--cyan); background: var(--surface); }
+.code-tab:hover { color: var(--text); }
+
+.code-block-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0 4px 4px 4px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.code-panel { display: none; }
+.code-panel.active { display: block; }
+
+pre {
+  padding: 1.5rem;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.kw { color: #cba6f7; }   /* keyword */
+.fn { color: var(--cyan); } /* function */
+.str { color: var(--green); } /* string */
+.cm { color: #45556e; font-style: italic; } /* comment */
+.num { color: var(--orange); } /* number */
+.cls { color: var(--yellow); } /* class */
+.op { color: #89b4fa; }   /* operator */
+
+/* ── INSTRUCTIONS ─────────────────────────────── */
+.instructions {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.instruction-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+
+.instruction-row:last-child { border-bottom: none; }
+.instruction-row:hover { background: var(--surface2); }
+
+.inst-num {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: var(--cyan-dim);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.inst-content { flex: 1; }
+.inst-title { font-family: var(--display); font-size: 0.9rem; font-weight: 700; color: #fff; margin-bottom: 0.25rem; }
+.inst-detail { color: var(--muted); font-size: 12px; }
+.inst-detail code { color: var(--cyan); background: var(--bg); padding: 0.1rem 0.4rem; border-radius: 2px; font-size: 11px; }
+
+/* ── FORMULA CARDS ────────────────────────────── */
+.formula-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.formula-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1.25rem;
+}
+
+.formula-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.5rem; }
+.formula-eq {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--cyan);
+  background: var(--bg);
+  padding: 0.6rem 1rem;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  margin-bottom: 0.6rem;
+  letter-spacing: 0.02em;
+}
+
+.formula-desc { color: var(--muted); font-size: 12px; }
+.formula-desc strong { color: var(--text); }
+
+/* ── TRAINING DEMO ────────────────────────────── */
+.training-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+@media (max-width: 700px) { .training-grid { grid-template-columns: 1fr; } }
+
+.slider-row { margin-bottom: 1rem; }
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+.slider-label span { color: var(--cyan); font-weight: 600; }
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--cyan);
+  cursor: pointer;
+}
+
+#lossCanvas { display: block; width: 100%; border-radius: 3px; }
+
+.training-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.stat-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.7rem;
+  text-align: center;
+}
+
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.2rem; }
+.stat-value { font-size: 16px; font-weight: 700; color: var(--cyan); }
+.stat-value.green { color: var(--green); }
+.stat-value.orange { color: var(--orange); }
+
+/* ── SCROLLBAR ────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+/* ── ANIMATIONS ───────────────────────────────── */
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+.section.active { animation: fadeIn 0.25s ease; }
+
+.signal-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  pointer-events: none;
+  box-shadow: 0 0 8px var(--cyan);
+}
+
+/* ── FOOTER ───────────────────────────────────── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1.25rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+  font-size: 11px;
+  position: relative;
+  z-index: 1;
+}
+
+footer span { color: var(--cyan); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-meta">
+    <div class="chip">CS655</div>
+    <div class="chip orange">Unit 12</div>
+    <div class="chip" style="background:rgba(0,255,157,0.1);color:var(--green);border-color:var(--green);">Monroe College</div>
+  </div>
+  <h1>Neural <span>Networks</span></h1>
+  <div class="header-sub">Dr. Danielle Jennings &nbsp;·&nbsp; From Biological Neurons to Artificial Intelligence &nbsp;·&nbsp; Interactive Class Demo</div>
+</header>
+
+<!-- NAV TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overview')">01 Overview</button>
+  <button class="tab" onclick="showTab('feedforward')">02 Feedforward</button>
+  <button class="tab" onclick="showTab('backprop')">03 Backpropagation</button>
+  <button class="tab" onclick="showTab('training')">04 Training Demo</button>
+  <button class="tab" onclick="showTab('code')">05 Python Code</button>
+  <button class="tab" onclick="showTab('instructions')">06 Instructions</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 1 — OVERVIEW
+════════════════════════════════════════════════ -->
+<div id="sec-overview" class="section active">
+  <div class="section-title">What is a Neural Network?</div>
+  <div class="section-desc">Layered mathematical nodes inspired by the brain — the foundation of modern AI.</div>
+
+  <div class="overview-grid">
+    <div class="overview-card">
+      <div class="card-num">COMPONENT 01</div>
+      <div class="card-title">Nodes (Neurons)</div>
+      <div class="card-desc">Organized in layers: input → hidden → output. Each node computes a weighted sum of its inputs, then applies an activation function.</div>
+    </div>
+    <div class="overview-card">
+      <div class="card-num">COMPONENT 02</div>
+      <div class="card-title">Weighted Connections</div>
+      <div class="card-desc">Each connection W<sub>ij</sub> carries a weight. The network learns by adjusting these weights to minimize prediction error.</div>
+    </div>
+    <div class="overview-card">
+      <div class="card-num">COMPONENT 03</div>
+      <div class="card-title">Activation Function</div>
+      <div class="card-desc">Sigmoid σ(x) = 1/(1+e⁻ˣ) maps any value to (0,1). Introduces non-linearity — without it, stacked layers are just linear regression.</div>
+    </div>
+    <div class="overview-card">
+      <div class="card-num">COMPONENT 04</div>
+      <div class="card-title">Learning Algorithm</div>
+      <div class="card-desc">Backpropagation + Gradient Descent. Calculus (chain rule) tells us how much each weight contributed to the error so we can adjust it.</div>
+    </div>
+    <div class="overview-card">
+      <div class="card-num">THEOREM</div>
+      <div class="card-title">Universal Approximation</div>
+      <div class="card-desc">A neural network with even a single hidden layer (with enough neurons) can approximate any continuous function to arbitrary precision.</div>
+    </div>
+    <div class="overview-card">
+      <div class="card-num">FOUNDATION OF</div>
+      <div class="card-title">Modern Deep Learning</div>
+      <div class="card-desc">CNNs (images), RNNs (sequences), Transformers (ChatGPT) — all build on these same fundamentals. Master this and the rest unlocks.</div>
+    </div>
+  </div>
+
+  <div class="formula-grid">
+    <div class="formula-card">
+      <div class="formula-label">Step 1 — Combination Function</div>
+      <div class="formula-eq">net<sub>j</sub> = Σ W<sub>ij</sub> · x<sub>i</sub></div>
+      <div class="formula-desc">Weighted sum of all inputs including bias. <strong>x₀ = 1 always</strong> (acts like the intercept in regression).</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-label">Step 2 — Sigmoid Activation</div>
+      <div class="formula-eq">σ(net) = 1 / (1 + e<sup>−net</sup>)</div>
+      <div class="formula-desc">Output always in (0,1). Derivative: <strong>σ'(net) = σ(net)·(1−σ(net))</strong> — essential for backprop.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-label">Gradient Descent — Weight Update</div>
+      <div class="formula-eq">w<sub>new</sub> = w<sub>old</sub> − η · (∂SSE/∂w)</div>
+      <div class="formula-desc"><strong>η (eta)</strong> = learning rate. Move weights downhill on the error surface to minimize SSE.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-label">Backpropagation — Delta Rule</div>
+      <div class="formula-eq">ΔW<sub>ij</sub> = η · δ<sub>j</sub> · x<sub>i</sub></div>
+      <div class="formula-desc">δ<sub>j</sub> = error responsibility of node j. Propagated backward using the chain rule.</div>
+    </div>
+  </div>
+
+  <div style="text-align:center;margin-top:1rem">
+    <button class="btn" onclick="showTab('feedforward')">▶ Start Feedforward Demo →</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 2 — FEEDFORWARD
+════════════════════════════════════════════════ -->
+<div id="sec-feedforward" class="section">
+  <div class="section-title">Feedforward Pass — Step by Step</div>
+  <div class="section-desc">Trace the exact worked example from Slide 7. Network: 2 inputs → 2 hidden nodes → 1 output.</div>
+
+  <div class="network-container">
+    <div class="network-header">
+      <div class="network-title">Network Visualization</div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button class="btn" onclick="prevStep()">← Prev</button>
+        <button class="btn green" onclick="nextStep()">Next →</button>
+        <button class="btn orange" onclick="resetDemo()">↺ Reset</button>
+        <button class="btn" onclick="autoPlay()" id="autoBtn">▶ Auto</button>
+      </div>
+    </div>
+    <canvas id="networkCanvas" width="700" height="320"></canvas>
+  </div>
+
+  <div class="steps-panel" id="stepsPanel">
+    <div class="step-card active" id="step-0" onclick="goStep(0)">
+      <div class="step-num">Step 1</div>
+      <div class="step-title">Set Inputs</div>
+      <div class="step-eq">x₁=0.5, x₂=0.3, x₀=1 (bias)</div>
+      <div class="step-result">Inputs loaded into network</div>
+    </div>
+    <div class="step-card" id="step-1" onclick="goStep(1)">
+      <div class="step-num">Step 2</div>
+      <div class="step-title">Compute net at Node A</div>
+      <div class="step-eq">netA = 0.8·1 + 0.5·0.5 + 0.4·0.3</div>
+      <div class="step-result">netA = 1.17 → oA = σ(1.17) = 0.7631</div>
+    </div>
+    <div class="step-card" id="step-2" onclick="goStep(2)">
+      <div class="step-num">Step 3</div>
+      <div class="step-title">Compute net at Node B</div>
+      <div class="step-eq">netB = −0.1·1 + 0.9·0.5 + 0.2·0.3</div>
+      <div class="step-result">netB = 0.41 → oB = σ(0.41) = 0.6011</div>
+    </div>
+    <div class="step-card" id="step-3" onclick="goStep(3)">
+      <div class="step-num">Step 4</div>
+      <div class="step-title">Compute Output Node Z</div>
+      <div class="step-eq">netZ = 0.5 + 0.9·oA + 0.7·oB</div>
+      <div class="step-result">netZ = 1.607 → ŷ = σ(1.607) = 0.8327</div>
+    </div>
+    <div class="step-card" id="step-4" onclick="goStep(4)">
+      <div class="step-num">Step 5</div>
+      <div class="step-title">Calculate Error</div>
+      <div class="step-eq">Error = y − ŷ = 1.0 − 0.8327</div>
+      <div class="step-result" style="color:var(--red)">Error = 0.1673 → Backprop begins!</div>
+    </div>
+    <div class="step-card" id="step-5" onclick="goStep(5)">
+      <div class="step-num">Complete</div>
+      <div class="step-title">Forward Pass Done</div>
+      <div class="step-eq">Prediction: ŷ = 0.8327</div>
+      <div class="step-result">Now adjust weights to reduce error</div>
+    </div>
+  </div>
+
+  <div class="values-box">
+    <div class="values-title">Current Values</div>
+    <div class="values-grid" id="valuesGrid">
+      <div class="val-item" id="val-x1"><div class="val-name">x₁ (input 1)</div><div class="val-num" id="vx1">—</div></div>
+      <div class="val-item" id="val-x2"><div class="val-name">x₂ (input 2)</div><div class="val-num" id="vx2">—</div></div>
+      <div class="val-item" id="val-netA"><div class="val-name">netA</div><div class="val-num" id="vnetA">—</div></div>
+      <div class="val-item" id="val-oA"><div class="val-name">oA (hidden A)</div><div class="val-num" id="voA">—</div></div>
+      <div class="val-item" id="val-netB"><div class="val-name">netB</div><div class="val-num" id="vnetB">—</div></div>
+      <div class="val-item" id="val-oB"><div class="val-name">oB (hidden B)</div><div class="val-num" id="voB">—</div></div>
+      <div class="val-item" id="val-netZ"><div class="val-name">netZ</div><div class="val-num" id="vnetZ">—</div></div>
+      <div class="val-item" id="val-yhat"><div class="val-name">ŷ (prediction)</div><div class="val-num" id="vyhat">—</div></div>
+      <div class="val-item" id="val-err"><div class="val-name">Error (y − ŷ)</div><div class="val-num red" id="verr">—</div></div>
+    </div>
+  </div>
+
+  <div class="values-box">
+    <div class="values-title">Calculation Log</div>
+    <div class="log-box" id="logBox">
+      <div class="log-line">// Press Next → to begin the feedforward pass</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 3 — BACKPROPAGATION
+════════════════════════════════════════════════ -->
+<div id="sec-backprop" class="section">
+  <div class="section-title">Backpropagation — Computing Weight Updates</div>
+  <div class="section-desc">Using the same worked example: ŷ=0.8327, y=1.0, η=0.1. Step through the delta calculations.</div>
+
+  <div class="formula-grid">
+    <div class="formula-card">
+      <div class="formula-label">Output Node δ (delta)</div>
+      <div class="formula-eq">δ<sub>Z</sub> = o<sub>Z</sub>(1−o<sub>Z</sub>)(y−o<sub>Z</sub>)</div>
+      <div class="formula-desc">Error responsibility for the output node. Combines the sigmoid derivative with the prediction error.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-label">Hidden Node δ (delta)</div>
+      <div class="formula-eq">δ<sub>j</sub> = o<sub>j</sub>(1−o<sub>j</sub>) · Σ(W<sub>jk</sub>·δ<sub>k</sub>)</div>
+      <div class="formula-desc">Error flows <strong>backward</strong> from downstream nodes k. No direct target — error is borrowed from the output.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-label">Weight Update Rule</div>
+      <div class="formula-eq">ΔW<sub>ij</sub> = η · δ<sub>j</sub> · x<sub>i</sub></div>
+      <div class="formula-desc">Adjust each weight proportionally to the learning rate × delta × input signal through that connection.</div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-label">With Momentum</div>
+      <div class="formula-eq">ΔW(t) = η·δ·x + α·ΔW(t−1)</div>
+      <div class="formula-desc"><strong>α</strong> = momentum (typically 0.9). Adds inertia — accelerates convergence, smooths oscillations.</div>
+    </div>
+  </div>
+
+  <div class="network-container">
+    <div class="network-header">
+      <div class="network-title">Backpropagation Walkthrough</div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+        <button class="btn" onclick="prevBpStep()">← Prev</button>
+        <button class="btn green" onclick="nextBpStep()">Next →</button>
+        <button class="btn orange" onclick="resetBp()">↺ Reset</button>
+      </div>
+    </div>
+    <canvas id="bpCanvas" width="700" height="320"></canvas>
+  </div>
+
+  <div class="steps-panel">
+    <div class="step-card active" id="bp-0" onclick="goBpStep(0)">
+      <div class="step-num">Backprop Step 1</div>
+      <div class="step-title">Compute δZ (Output)</div>
+      <div class="step-eq">δZ = 0.8327×0.1673×0.1673</div>
+      <div class="step-result">δZ = 0.02330</div>
+    </div>
+    <div class="step-card" id="bp-1" onclick="goBpStep(1)">
+      <div class="step-num">Backprop Step 2</div>
+      <div class="step-title">Update W_AZ</div>
+      <div class="step-eq">ΔW_AZ = 0.1×0.02330×0.7631</div>
+      <div class="step-result">W_AZ: 0.9 → 0.90178</div>
+    </div>
+    <div class="step-card" id="bp-2" onclick="goBpStep(2)">
+      <div class="step-num">Backprop Step 3</div>
+      <div class="step-title">Compute δA (Hidden A)</div>
+      <div class="step-eq">δA = 0.7631×0.2369×0.9×0.02330</div>
+      <div class="step-result">δA = 0.003794</div>
+    </div>
+    <div class="step-card" id="bp-3" onclick="goBpStep(3)">
+      <div class="step-num">Backprop Step 4</div>
+      <div class="step-title">Compute δB (Hidden B)</div>
+      <div class="step-eq">δB = 0.6011×0.3989×0.7×0.02330</div>
+      <div class="step-result">δB = 0.003903</div>
+    </div>
+    <div class="step-card" id="bp-4" onclick="goBpStep(4)">
+      <div class="step-num">Backprop Step 5</div>
+      <div class="step-title">Update Input Weights</div>
+      <div class="step-eq">ΔW_1A = 0.1×0.003794×0.5</div>
+      <div class="step-result">W_1A: 0.5→0.50019 &nbsp; W_1B: 0.9→0.90020</div>
+    </div>
+    <div class="step-card" id="bp-5" onclick="goBpStep(5)">
+      <div class="step-num">Complete</div>
+      <div class="step-title">One Iteration Done</div>
+      <div class="step-eq">All weights updated slightly</div>
+      <div class="step-result">Repeat thousands of times → converges!</div>
+    </div>
+  </div>
+
+  <div class="values-box">
+    <div class="values-title">Weight Values (Before → After)</div>
+    <div class="values-grid" id="bpValuesGrid">
+      <div class="val-item" id="bv-dZ"><div class="val-name">δZ</div><div class="val-num" id="bdZ">—</div></div>
+      <div class="val-item" id="bv-dA"><div class="val-name">δA</div><div class="val-num" id="bdA">—</div></div>
+      <div class="val-item" id="bv-dB"><div class="val-name">δB</div><div class="val-num" id="bdB">—</div></div>
+      <div class="val-item" id="bv-WAZ"><div class="val-name">W_AZ</div><div class="val-num" id="bWAZ">0.9</div></div>
+      <div class="val-item" id="bv-WBZ"><div class="val-name">W_BZ</div><div class="val-num" id="bWBZ">0.7</div></div>
+      <div class="val-item" id="bv-W0Z"><div class="val-name">W_0Z (bias→Z)</div><div class="val-num" id="bW0Z">0.5</div></div>
+      <div class="val-item" id="bv-W1A"><div class="val-name">W_1A</div><div class="val-num" id="bW1A">0.5</div></div>
+      <div class="val-item" id="bv-W1B"><div class="val-name">W_1B</div><div class="val-num" id="bW1B">0.9</div></div>
+    </div>
+  </div>
+
+  <div class="values-box">
+    <div class="values-title">Backprop Log</div>
+    <div class="log-box" id="bpLogBox">
+      <div class="log-line">// Press Next → to begin backpropagation</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 4 — TRAINING DEMO
+════════════════════════════════════════════════ -->
+<div id="sec-training" class="section">
+  <div class="section-title">Live Training Demo</div>
+  <div class="section-desc">Watch a neural network learn in real-time. Adjust hyperparameters and observe how they affect convergence.</div>
+
+  <div class="training-stats">
+    <div class="stat-box"><div class="stat-label">Epoch</div><div class="stat-value" id="epochStat">0</div></div>
+    <div class="stat-box"><div class="stat-label">Training Loss</div><div class="stat-value orange" id="lossStat">—</div></div>
+    <div class="stat-box"><div class="stat-label">Val Loss</div><div class="stat-value" id="valLossStat">—</div></div>
+    <div class="stat-box"><div class="stat-label">Accuracy</div><div class="stat-value green" id="accStat">—</div></div>
+  </div>
+
+  <div class="training-grid">
+    <div>
+      <div class="network-container" style="height:260px;display:flex;align-items:center;justify-content:center;">
+        <div>
+          <canvas id="lossCanvas" width="380" height="220"></canvas>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:0.5rem">
+        — Training Loss &nbsp;&nbsp; <span style="color:var(--orange)">— Validation Loss</span>
+      </div>
+    </div>
+    <div>
+      <div class="network-container">
+        <div class="section-title" style="font-size:1rem;margin-bottom:1rem">Hyperparameters</div>
+
+        <div class="slider-row">
+          <div class="slider-label">Learning Rate (η) <span id="lrVal">0.050</span></div>
+          <input type="range" id="lrSlider" min="1" max="20" value="5" oninput="updateLR(this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Momentum (α) <span id="momVal">0.90</span></div>
+          <input type="range" id="momSlider" min="0" max="10" value="9" oninput="updateMom(this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Hidden Neurons <span id="neurVal">5</span></div>
+          <input type="range" id="neurSlider" min="1" max="20" value="5" oninput="updateNeur(this.value)">
+        </div>
+        <div class="slider-row">
+          <div class="slider-label">Dropout Rate <span id="dropVal">0.0</span></div>
+          <input type="range" id="dropSlider" min="0" max="5" value="0" oninput="updateDrop(this.value)">
+        </div>
+
+        <div style="display:flex;gap:0.5rem;margin-top:1rem;flex-wrap:wrap">
+          <button class="btn green" onclick="startTraining()" id="trainBtn">▶ Train</button>
+          <button class="btn orange" onclick="stopTraining()" id="stopBtn" disabled>■ Stop</button>
+          <button class="btn" onclick="resetTraining()">↺ Reset</button>
+        </div>
+        <div style="margin-top:0.75rem;font-size:11px;color:var(--muted);line-height:1.7">
+          Try: <span style="color:var(--cyan)">high η → overshoot</span> |
+          <span style="color:var(--green)">low η → slow</span> |
+          <span style="color:var(--orange)">dropout → regularize</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="values-box">
+    <div class="values-title">Training Log</div>
+    <div class="log-box" id="trainLog">
+      <div class="log-line">// Adjust hyperparameters above, then press Train</div>
+      <div class="log-line">// Dataset: XOR classification (4 samples, non-linearly separable)</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 5 — CODE
+════════════════════════════════════════════════ -->
+<div id="sec-code" class="section">
+  <div class="section-title">Python Implementation</div>
+  <div class="section-desc">Assignment-ready code for both Scikit-Learn and TensorFlow/Keras — exactly as covered in lecture Slide 16.</div>
+
+  <div class="code-tabs">
+    <button class="code-tab active" onclick="showCode('sklearn')">Scikit-Learn</button>
+    <button class="code-tab" onclick="showCode('keras')">Keras / TensorFlow</button>
+    <button class="code-tab" onclick="showCode('sensitivity')">Sensitivity Analysis</button>
+    <button class="code-tab" onclick="showCode('preprocessing')">Preprocessing</button>
+  </div>
+
+  <div class="code-block-wrap">
+
+    <div class="code-panel active" id="code-sklearn">
+<pre><span class="cm"># ═══════════════════════════════════════════════════════
+# CS655 – Neural Networks: Scikit-Learn MLPClassifier
+# ═══════════════════════════════════════════════════════</span>
+
+<span class="kw">from</span> sklearn.neural_network <span class="kw">import</span> <span class="cls">MLPClassifier</span>
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> <span class="cls">StandardScaler</span>
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> accuracy_score, classification_report
+<span class="kw">from</span> sklearn.datasets <span class="kw">import</span> load_breast_cancer
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># ── Load Dataset ─────────────────────────────────────</span>
+data = <span class="fn">load_breast_cancer</span>()
+X, y = data.data, data.target
+
+<span class="cm"># ── Split (use training data ONLY for scaling!) ───────</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X, y, test_size=<span class="num">0.20</span>, random_state=<span class="num">42</span>
+)
+
+<span class="cm"># ── Feature Scaling (Min-Max or StandardScaler) ───────</span>
+scaler = <span class="cls">StandardScaler</span>()
+X_train_s = scaler.<span class="fn">fit_transform</span>(X_train)  <span class="cm"># fit on train only!</span>
+X_test_s  = scaler.<span class="fn">transform</span>(X_test)       <span class="cm"># apply same scale to test</span>
+
+<span class="cm"># ── Architecture 1: Shallow (1 hidden layer) ─────────</span>
+model_shallow = <span class="cls">MLPClassifier</span>(
+    hidden_layer_sizes=(<span class="num">50</span>,),      <span class="cm"># 1 hidden layer, 50 neurons</span>
+    activation=<span class="str">'relu'</span>,            <span class="cm"># ReLU avoids vanishing gradient</span>
+    solver=<span class="str">'adam'</span>,               <span class="cm"># adaptive learning rate + momentum</span>
+    max_iter=<span class="num">300</span>,
+    random_state=<span class="num">42</span>,
+    validation_fraction=<span class="num">0.15</span>,     <span class="cm"># early stopping validation set</span>
+    early_stopping=<span class="kw">True</span>,          <span class="cm"># stop when val loss stops improving</span>
+    n_iter_no_change=<span class="num">10</span>           <span class="cm"># patience = 10 epochs</span>
+)
+
+<span class="cm"># ── Architecture 2: Deeper (2 hidden layers) ─────────</span>
+model_deep = <span class="cls">MLPClassifier</span>(
+    hidden_layer_sizes=(<span class="num">100</span>, <span class="num">50</span>),  <span class="cm"># 2 layers: 100 then 50 neurons</span>
+    activation=<span class="str">'relu'</span>,
+    solver=<span class="str">'adam'</span>,
+    learning_rate_init=<span class="num">0.001</span>,     <span class="cm"># Adam default starting LR</span>
+    max_iter=<span class="num">500</span>,
+    random_state=<span class="num">42</span>,
+    early_stopping=<span class="kw">True</span>,
+    n_iter_no_change=<span class="num">15</span>
+)
+
+<span class="cm"># ── Train & Evaluate ──────────────────────────────────</span>
+<span class="kw">for</span> name, model <span class="kw">in</span> [(<span class="str">"Shallow"</span>, model_shallow), (<span class="str">"Deep"</span>, model_deep)]:
+    model.<span class="fn">fit</span>(X_train_s, y_train)
+    y_pred = model.<span class="fn">predict</span>(X_test_s)
+    acc = <span class="fn">accuracy_score</span>(y_test, y_pred)
+    <span class="fn">print</span>(<span class="str">f"\n── {name} Network ──"</span>)
+    <span class="fn">print</span>(<span class="str">f"Accuracy:  {acc:.4f}"</span>)
+    <span class="fn">print</span>(<span class="str">f"Epochs:    {model.n_iter_}"</span>)
+    <span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred, target_names=data.target_names))
+</pre>
+    </div>
+
+    <div class="code-panel" id="code-keras">
+<pre><span class="cm"># ═══════════════════════════════════════════════════════
+# CS655 – Neural Networks: TensorFlow / Keras
+# ═══════════════════════════════════════════════════════</span>
+
+<span class="kw">import</span> tensorflow <span class="kw">as</span> tf
+<span class="kw">from</span> tensorflow.keras <span class="kw">import</span> layers, callbacks
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> <span class="cls">StandardScaler</span>
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.datasets <span class="kw">import</span> load_breast_cancer
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="cm"># ── Data Prep ─────────────────────────────────────────</span>
+data = <span class="fn">load_breast_cancer</span>()
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    data.data, data.target, test_size=<span class="num">0.20</span>, random_state=<span class="num">42</span>
+)
+scaler = <span class="cls">StandardScaler</span>()
+X_train = scaler.<span class="fn">fit_transform</span>(X_train)
+X_test  = scaler.<span class="fn">transform</span>(X_test)
+
+<span class="cm"># ── Build Model ───────────────────────────────────────</span>
+model = tf.keras.<span class="cls">Sequential</span>([
+    layers.<span class="cls">Dense</span>(<span class="num">100</span>, activation=<span class="str">'relu'</span>,
+                 input_shape=(X_train.shape[<span class="num">1</span>],)),  <span class="cm"># input layer</span>
+    layers.<span class="cls">Dropout</span>(<span class="num">0.3</span>),                           <span class="cm"># 30% dropout</span>
+    layers.<span class="cls">Dense</span>(<span class="num">50</span>,  activation=<span class="str">'relu'</span>),           <span class="cm"># hidden layer 2</span>
+    layers.<span class="cls">Dropout</span>(<span class="num">0.2</span>),
+    layers.<span class="cls">Dense</span>(<span class="num">1</span>,   activation=<span class="str">'sigmoid'</span>)         <span class="cm"># output: binary</span>
+])
+
+model.<span class="fn">compile</span>(
+    optimizer=<span class="str">'adam'</span>,
+    loss=<span class="str">'binary_crossentropy'</span>,
+    metrics=[<span class="str">'accuracy'</span>]
+)
+
+model.<span class="fn">summary</span>()   <span class="cm"># print architecture</span>
+
+<span class="cm"># ── Callbacks: Early Stopping ─────────────────────────</span>
+early_stop = callbacks.<span class="cls">EarlyStopping</span>(
+    monitor=<span class="str">'val_loss'</span>,
+    patience=<span class="num">10</span>,            <span class="cm"># wait 10 epochs before stopping</span>
+    restore_best_weights=<span class="kw">True</span>
+)
+
+<span class="cm"># ── Train ─────────────────────────────────────────────</span>
+history = model.<span class="fn">fit</span>(
+    X_train, y_train,
+    epochs=<span class="num">200</span>,
+    validation_split=<span class="num">0.2</span>,    <span class="cm"># 20% of train → validation</span>
+    batch_size=<span class="num">32</span>,
+    callbacks=[early_stop],
+    verbose=<span class="num">1</span>
+)
+
+<span class="cm"># ── Evaluate ──────────────────────────────────────────</span>
+test_loss, test_acc = model.<span class="fn">evaluate</span>(X_test, y_test, verbose=<span class="num">0</span>)
+<span class="fn">print</span>(<span class="str">f"\nTest Accuracy: {test_acc:.4f}"</span>)
+<span class="fn">print</span>(<span class="str">f"Test Loss:     {test_loss:.4f}"</span>)
+
+<span class="cm"># ── Plot Training vs Validation Loss ──────────────────</span>
+plt.<span class="fn">figure</span>(figsize=(<span class="num">10</span>, <span class="num">4</span>))
+plt.<span class="fn">subplot</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">1</span>)
+plt.<span class="fn">plot</span>(history.history[<span class="str">'loss'</span>],     label=<span class="str">'Training Loss'</span>)
+plt.<span class="fn">plot</span>(history.history[<span class="str">'val_loss'</span>], label=<span class="str">'Validation Loss'</span>)
+plt.<span class="fn">title</span>(<span class="str">'Loss Curves'</span>); plt.<span class="fn">xlabel</span>(<span class="str">'Epoch'</span>); plt.<span class="fn">legend</span>()
+
+plt.<span class="fn">subplot</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">2</span>)
+plt.<span class="fn">plot</span>(history.history[<span class="str">'accuracy'</span>],     label=<span class="str">'Training Acc'</span>)
+plt.<span class="fn">plot</span>(history.history[<span class="str">'val_accuracy'</span>], label=<span class="str">'Validation Acc'</span>)
+plt.<span class="fn">title</span>(<span class="str">'Accuracy Curves'</span>); plt.<span class="fn">xlabel</span>(<span class="str">'Epoch'</span>); plt.<span class="fn">legend</span>()
+plt.<span class="fn">tight_layout</span>()
+plt.<span class="fn">show</span>()
+</pre>
+    </div>
+
+    <div class="code-panel" id="code-sensitivity">
+<pre><span class="cm"># ═══════════════════════════════════════════════════════
+# CS655 – Sensitivity Analysis (Feature Importance)
+# ═══════════════════════════════════════════════════════</span>
+
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+<span class="kw">def</span> <span class="fn">sensitivity_analysis</span>(model, X_train, feature_names):
+    <span class="str">"""
+    Measure relative influence of each input feature on model output.
+    Procedure (from Slide 14):
+      1. Create baseline: all features = mean value
+      2. Vary each feature from min → max
+      3. Record output range for each feature
+      4. Larger range = higher influence
+    """</span>
+    <span class="cm"># Step 1: baseline observation (every feature at mean)</span>
+    x_mean = X_train.<span class="fn">mean</span>(axis=<span class="num">0</span>).reshape(<span class="num">1</span>, -<span class="num">1</span>)
+    baseline = model.<span class="fn">predict_proba</span>(x_mean)[<span class="num">0</span>][<span class="num">1</span>]
+
+    results = []
+    <span class="kw">for</span> i, feature <span class="kw">in</span> <span class="fn">enumerate</span>(feature_names):
+        x_low  = x_mean.<span class="fn">copy</span>(); x_low[<span class="num">0</span>, i]  = X_train[:, i].<span class="fn">min</span>()
+        x_high = x_mean.<span class="fn">copy</span>(); x_high[<span class="num">0</span>, i] = X_train[:, i].<span class="fn">max</span>()
+
+        out_low  = model.<span class="fn">predict_proba</span>(x_low)[<span class="num">0</span>][<span class="num">1</span>]
+        out_high = model.<span class="fn">predict_proba</span>(x_high)[<span class="num">0</span>][<span class="num">1</span>]
+
+        influence = <span class="fn">abs</span>(out_high - out_low)
+        results.<span class="fn">append</span>({
+            <span class="str">'Feature'</span>: feature,
+            <span class="str">'Low Output'</span>: <span class="fn">round</span>(out_low, <span class="num">4</span>),
+            <span class="str">'High Output'</span>: <span class="fn">round</span>(out_high, <span class="num">4</span>),
+            <span class="str">'Influence (Range)'</span>: <span class="fn">round</span>(influence, <span class="num">4</span>)
+        })
+
+    df = pd.<span class="cls">DataFrame</span>(results).<span class="fn">sort_values</span>(<span class="str">'Influence (Range)'</span>, ascending=<span class="kw">False</span>)
+
+    <span class="cm"># Plot horizontal bar chart</span>
+    plt.<span class="fn">figure</span>(figsize=(<span class="num">10</span>, <span class="num">6</span>))
+    plt.<span class="fn">barh</span>(df[<span class="str">'Feature'</span>][::<span class="num">-1</span>], df[<span class="str">'Influence (Range)'</span>][::<span class="num">-1</span>], color=<span class="str">'steelblue'</span>)
+    plt.<span class="fn">xlabel</span>(<span class="str">'Output Range (Influence)'</span>)
+    plt.<span class="fn">title</span>(<span class="str">'Sensitivity Analysis — Feature Importance'</span>)
+    plt.<span class="fn">tight_layout</span>()
+    plt.<span class="fn">show</span>()
+
+    <span class="kw">return</span> df
+
+<span class="cm"># ── Run Sensitivity Analysis ───────────────────────────</span>
+<span class="cm"># (assumes model_shallow and scaler from sklearn example above)</span>
+feature_names = load_breast_cancer().feature_names
+df_importance = <span class="fn">sensitivity_analysis</span>(model_shallow, X_train_s, feature_names)
+<span class="fn">print</span>(df_importance.<span class="fn">to_string</span>(index=<span class="kw">False</span>))
+</pre>
+    </div>
+
+    <div class="code-panel" id="code-preprocessing">
+<pre><span class="cm"># ═══════════════════════════════════════════════════════
+# CS655 – Input / Output Encoding (Slide 6)
+# ═══════════════════════════════════════════════════════</span>
+
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> <span class="cls">MinMaxScaler</span>, <span class="cls">LabelEncoder</span>
+
+<span class="cm"># ── 1. Continuous Variables: Min-Max Normalization ────</span>
+<span class="cm">#    x_norm = (x - x_min) / (x_max - x_min)  → range [0, 1]</span>
+scaler = <span class="cls">MinMaxScaler</span>(feature_range=(<span class="num">0</span>, <span class="num">1</span>))
+X_norm = scaler.<span class="fn">fit_transform</span>(X_continuous)
+
+<span class="cm"># ── 2. Binary Categorical: Indicator Variable ─────────</span>
+<span class="cm">#    Female = 1, Male = 0</span>
+df[<span class="str">'gender_flag'</span>] = (df[<span class="str">'gender'</span>] == <span class="str">'Female'</span>).<span class="fn">astype</span>(<span class="fn">int</span>)
+
+<span class="cm"># ── 3. Unordered Categories: One-Hot Encoding ─────────</span>
+<span class="cm">#    K categories → K binary columns</span>
+df_encoded = pd.<span class="fn">get_dummies</span>(df[<span class="str">'color'</span>], prefix=<span class="str">'color'</span>)
+<span class="cm"># result: color_red, color_blue, color_green (all 0 or 1)</span>
+
+<span class="cm"># ── 4. Output Denormalization (Regression) ────────────</span>
+<span class="cm">#    x_pred = output × (x_max - x_min) + x_min</span>
+<span class="kw">def</span> <span class="fn">denormalize</span>(output, x_min, x_max):
+    <span class="str">"""Convert normalized network output back to original scale."""</span>
+    <span class="kw">return</span> output * (x_max - x_min) + x_min
+
+<span class="cm"># Example from Slide 6: predicted stock price</span>
+output  = <span class="num">0.73</span>   <span class="cm"># network output (sigmoid)</span>
+x_min   = <span class="num">50</span>    <span class="cm"># min price in training data</span>
+x_max   = <span class="num">200</span>   <span class="cm"># max price in training data</span>
+price = <span class="fn">denormalize</span>(output, x_min, x_max)
+<span class="fn">print</span>(<span class="str">f"Predicted price: ${price:.2f}"</span>)   <span class="cm"># → $159.50</span>
+
+<span class="cm"># ── 5. IMPORTANT: Never Fit Scaler on Test Data! ──────</span>
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(X, y, test_size=<span class="num">0.2</span>)
+scaler = <span class="cls">MinMaxScaler</span>()
+X_train_scaled = scaler.<span class="fn">fit_transform</span>(X_train)  <span class="cm"># ✓ fit here</span>
+X_test_scaled  = scaler.<span class="fn">transform</span>(X_test)        <span class="cm"># ✓ only transform</span>
+<span class="cm"># X_test_bad = scaler.fit_transform(X_test)       # ✗ DATA LEAKAGE!</span>
+</pre>
+    </div>
+  </div>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.25rem;margin-bottom:1.5rem">
+    <div class="values-title" style="margin-bottom:0.75rem">Quick Setup — Google Colab (Free)</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.9">
+      1. Go to <span style="color:var(--cyan)">colab.research.google.com</span> — sign in with your Google account (free)<br>
+      2. Click <span style="color:var(--cyan)">File → New Notebook</span><br>
+      3. Copy any code block above into a cell and press <code style="background:var(--bg);padding:0.1rem 0.4rem;border-radius:2px;color:var(--cyan)">Shift+Enter</code><br>
+      4. Scikit-Learn, TensorFlow, NumPy, Matplotlib are all <strong style="color:#fff">pre-installed</strong> — no setup needed<br>
+      5. Enable GPU: <span style="color:var(--cyan)">Runtime → Change runtime type → T4 GPU</span> (free, speeds up Keras)
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     SECTION 6 — INSTRUCTIONS
+════════════════════════════════════════════════ -->
+<div id="sec-instructions" class="section">
+  <div class="section-title">Class Instructions & Usage Guide</div>
+  <div class="section-desc">How to use this demo effectively in lecture. Designed for CS655 – Unit 12.</div>
+
+  <div class="instructions" style="margin-bottom:1.5rem">
+    <div style="padding:1rem 1.5rem;background:var(--surface2);border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem">Suggested Lecture Flow</div>
+      <div class="section-title" style="font-size:1rem">Using This Demo in Class (~45 min)</div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num">1</div>
+      <div class="inst-content">
+        <div class="inst-title">Open Tab 01 — Overview (5 min)</div>
+        <div class="inst-detail">Walk through the 6 concept cards. Point out the 4 formula cards at the bottom. Ask students: <em>"Why can't a neural network just be a stack of linear equations?"</em> (Answer: it collapses to a single linear model — activation functions are essential.)</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num">2</div>
+      <div class="inst-content">
+        <div class="inst-title">Open Tab 02 — Feedforward (10 min)</div>
+        <div class="inst-detail">Click <code>Next →</code> one step at a time. Have students calculate each step on paper BEFORE clicking — then verify. Watch the signal animate through the network. The values table updates in sync. Pause on Step 5 (Error = 0.1673) and ask: <em>"How does the network know which weights caused this error?"</em></div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num">3</div>
+      <div class="inst-content">
+        <div class="inst-title">Open Tab 03 — Backpropagation (10 min)</div>
+        <div class="inst-detail">Step through the 6 backprop steps. Emphasize Step 1 (δZ) — this is where error flows backward. Show how δA and δB get their error from downstream nodes, not directly from the target. The weight update table shows before/after values in green. Ask: <em>"Why are the weight changes so tiny?"</em></div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num">4</div>
+      <div class="inst-content">
+        <div class="inst-title">Open Tab 04 — Training Demo (10 min)</div>
+        <div class="inst-detail">First, show default settings — click <code>▶ Train</code> and let it run. Then demonstrate: (a) Set η very high → watch loss bounce or diverge. (b) Set η very low → watch slow convergence. (c) Add dropout → compare regularized vs. unregularized. This makes the hyperparameter discussion concrete and memorable.</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num">5</div>
+      <div class="inst-content">
+        <div class="inst-title">Open Tab 05 — Python Code (10 min)</div>
+        <div class="inst-detail">Walk through the Scikit-Learn tab — highlight <code>early_stopping=True</code>, <code>StandardScaler</code>, and <code>hidden_layer_sizes</code>. Mention: <em>"This is assignment-ready code."</em> Switch to Keras — point out <code>Dropout</code> layers and <code>EarlyStopping</code> callback. The Preprocessing tab has the denormalization formula from the slides.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions" style="margin-bottom:1.5rem">
+    <div style="padding:1rem 1.5rem;background:var(--surface2);border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem">Assignment Checklist</div>
+      <div class="section-title" style="font-size:1rem">What Students Need to Submit</div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green)">✓</div>
+      <div class="inst-content">
+        <div class="inst-title">MLPClassifier implementation (Scikit-Learn)</div>
+        <div class="inst-detail">At least 2 architectures tested (e.g., 1 layer vs 2 layers). Feature scaling applied correctly. Early stopping enabled. Accuracy printed.</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green)">✓</div>
+      <div class="inst-content">
+        <div class="inst-title">Keras model with Dropout + EarlyStopping</div>
+        <div class="inst-detail">Sequential model built. Dropout applied in at least one layer. EarlyStopping callback used. <code>model.summary()</code> printed.</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green)">✓</div>
+      <div class="inst-content">
+        <div class="inst-title">Training vs. Validation loss curves plotted</div>
+        <div class="inst-detail">Two subplots: loss curves and accuracy curves. Student must describe in writing what the curves indicate (overfitting? underfitting? good fit?).</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green)">✓</div>
+      <div class="inst-content">
+        <div class="inst-title">Sensitivity Analysis — feature importance ranking</div>
+        <div class="inst-detail">Horizontal bar chart showing which features influence the model most. Written interpretation: which 3 features are most important and why might that be?</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green)">✓</div>
+      <div class="inst-content">
+        <div class="inst-title">Conclusions section in Jupyter Notebook</div>
+        <div class="inst-detail">Which architecture performed best? What activation function worked better for this dataset? What did early stopping prevent? Submit as .ipynb file.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="instructions">
+    <div style="padding:1rem 1.5rem;background:var(--surface2);border-bottom:1px solid var(--border)">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.3rem">Tools Reference</div>
+      <div class="section-title" style="font-size:1rem">What Students Need & Where to Get It</div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green);font-size:9px">FREE</div>
+      <div class="inst-content">
+        <div class="inst-title">Google Colab — colab.research.google.com</div>
+        <div class="inst-detail">Recommended. Free browser-based Jupyter notebook. All libraries pre-installed. Free GPU available. Sign in with any Google account. No setup, no installation.</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green);font-size:9px">FREE</div>
+      <div class="inst-content">
+        <div class="inst-title">Anaconda — anaconda.com (local install)</div>
+        <div class="inst-detail">Free Python distribution that includes Jupyter, NumPy, Pandas, Matplotlib, and Scikit-Learn. Students install <code>pip install tensorflow</code> separately. Works offline.</div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green);font-size:9px">FREE</div>
+      <div class="inst-content">
+        <div class="inst-title">Required Libraries</div>
+        <div class="inst-detail"><code>scikit-learn</code> · <code>tensorflow</code> · <code>numpy</code> · <code>pandas</code> · <code>matplotlib</code> — all free, open-source. Install with: <code>pip install scikit-learn tensorflow pandas matplotlib</code></div>
+      </div>
+    </div>
+    <div class="instruction-row">
+      <div class="inst-num" style="background:rgba(0,255,157,0.1);border-color:var(--green);color:var(--green);font-size:9px">FREE</div>
+      <div class="inst-content">
+        <div class="inst-title">Recommended Datasets for Assignment</div>
+        <div class="inst-detail">Heart Disease (UCI) · Titanic Survival · Breast Cancer (built into sklearn) · Diabetes Prediction · Any business dataset from student's domain. All available free on <code>kaggle.com</code> or <code>archive.ics.uci.edu</code>.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div>CS655 – Machine Learning &nbsp;·&nbsp; <span>Unit 12: Neural Networks</span></div>
+  <div>Dr. Danielle Jennings &nbsp;·&nbsp; Monroe College</div>
+</footer>
+
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// TAB SYSTEM
+// ═══════════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  const tabs = document.querySelectorAll('.tab');
+  const idx = ['overview','feedforward','backprop','training','code','instructions'].indexOf(id);
+  if (idx >= 0) tabs[idx].classList.add('active');
+
+  if (id === 'feedforward') initNetworkCanvas();
+  if (id === 'backprop') { initBpCanvas(); resetBp(); }
+  if (id === 'training') initTraining();
+}
+
+function showCode(id) {
+  document.querySelectorAll('.code-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('code-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEEDFORWARD DEMO
+// ═══════════════════════════════════════════════════════════════
+let currentStep = 0;
+let autoTimer = null;
+
+const stepData = [
+  { active: [0,1,2], highlight: [], log: [
+    ['active', '// Step 1: Load inputs'],
+    ['active', 'x₁ = 0.5   x₂ = 0.3   x₀ = 1 (bias always = 1)'],
+    ['', '// Weights (initialized randomly):'],
+    ['', 'W₀A=0.8  W₁A=0.5  W₂A=0.4'],
+    ['', 'W₀B=-0.1  W₁B=0.9  W₂B=0.2'],
+    ['', 'W₀Z=0.5  WAZ=0.9  WBZ=0.7'],
+  ]},
+  { active: [0,1,2,3], highlight: [3], log: [
+    ['active', '// Step 2: Compute net at Node A'],
+    ['active', 'netA = W₀A·x₀ + W₁A·x₁ + W₂A·x₂'],
+    ['active', 'netA = 0.8·1 + 0.5·0.5 + 0.4·0.3'],
+    ['active', 'netA = 0.80 + 0.25 + 0.12 = 1.17'],
+    ['success', 'oA = σ(1.17) = 1/(1+e⁻¹·¹⁷) = 0.7631'],
+  ]},
+  { active: [0,1,2,4], highlight: [4], log: [
+    ['active', '// Step 3: Compute net at Node B'],
+    ['active', 'netB = W₀B·x₀ + W₁B·x₁ + W₂B·x₂'],
+    ['active', 'netB = -0.1·1 + 0.9·0.5 + 0.2·0.3'],
+    ['active', 'netB = -0.10 + 0.45 + 0.06 = 0.41'],
+    ['success', 'oB = σ(0.41) = 1/(1+e⁻⁰·⁴¹) = 0.6011'],
+  ]},
+  { active: [0,1,2,3,4,5], highlight: [5], log: [
+    ['active', '// Step 4: Compute Output Node Z'],
+    ['active', 'netZ = W₀Z·1 + WAZ·oA + WBZ·oB'],
+    ['active', 'netZ = 0.5·1 + 0.9·0.7631 + 0.7·0.6011'],
+    ['active', 'netZ = 0.5 + 0.6868 + 0.4208 = 1.6076'],
+    ['success', 'ŷ = σ(1.6076) = 1/(1+e⁻¹·⁶¹) = 0.8327'],
+  ]},
+  { active: [0,1,2,3,4,5], highlight: [5], log: [
+    ['active', '// Step 5: Calculate Prediction Error'],
+    ['active', 'Target: y = 1.0'],
+    ['active', 'Predicted: ŷ = 0.8327'],
+    ['warn', 'Error = y - ŷ = 1.0 - 0.8327 = 0.1673'],
+    ['warn', 'SSE contribution = (0.1673)² = 0.0280'],
+    ['warn', '→ Backpropagation begins! Adjust weights to reduce error.'],
+  ]},
+  { active: [0,1,2,3,4,5], highlight: [], log: [
+    ['success', '// ✓ Forward Pass Complete!'],
+    ['success', 'Prediction ŷ = 0.8327  (target y = 1.0)'],
+    ['', 'Next: Backpropagation will compute δ for each node'],
+    ['', 'and adjust all 9 weights to reduce the error.'],
+    ['', '→ Click "03 Backpropagation" to continue'],
+  ]},
+];
+
+const valUpdates = [
+  { vx1:'0.5', vx2:'0.3' },
+  { vnetA:'1.17', voA:'0.7631' },
+  { vnetB:'0.41', voB:'0.6011' },
+  { vnetZ:'1.607', vyhat:'0.8327' },
+  { verr:'0.1673' },
+  {},
+];
+
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+
+let networkCanvas, nctx, bpCanvas, bpCtx;
+
+const NODES = {
+  x0: {x:90, y:80,  label:'x₀=1',  type:'bias'},
+  x1: {x:90, y:170, label:'x₁',    type:'input'},
+  x2: {x:90, y:260, label:'x₂',    type:'input'},
+  A:  {x:290,y:120, label:'A',      type:'hidden'},
+  B:  {x:290,y:220, label:'B',      type:'hidden'},
+  Z:  {x:490,y:170, label:'Z (ŷ)',  type:'output'},
+};
+
+const CONNECTIONS = [
+  {from:'x0',to:'A',w:'W₀A=0.8'}, {from:'x1',to:'A',w:'W₁A=0.5'}, {from:'x2',to:'A',w:'W₂A=0.4'},
+  {from:'x0',to:'B',w:'W₀B=−.1'},{from:'x1',to:'B',w:'W₁B=0.9'}, {from:'x2',to:'B',w:'W₂B=0.2'},
+  {from:'A', to:'Z',w:'WAZ=0.9'}, {from:'B', to:'Z',w:'WBZ=0.7'},
+];
+
+const NODE_ORDER = ['x0','x1','x2','A','B','Z'];
+
+function initNetworkCanvas() {
+  networkCanvas = document.getElementById('networkCanvas');
+  nctx = networkCanvas.getContext('2d');
+  drawNetwork(currentStep);
+}
+
+function drawNetwork(step) {
+  if (!nctx) return;
+  const W = networkCanvas.width, H = networkCanvas.height;
+  nctx.clearRect(0,0,W,H);
+
+  const activeNodes = stepData[step] ? stepData[step].active.map(i => NODE_ORDER[i]) : [];
+  const highlightNodes = stepData[step] ? stepData[step].highlight.map(i => NODE_ORDER[i]) : [];
+
+  // Draw connections
+  CONNECTIONS.forEach(c => {
+    const fn = NODES[c.from], tn = NODES[c.to];
+    const isActive = activeNodes.includes(c.from) && activeNodes.includes(c.to);
+
+    nctx.beginPath();
+    nctx.moveTo(fn.x+22, fn.y);
+    nctx.lineTo(tn.x-22, tn.y);
+
+    if (highlightNodes.includes(c.to)) {
+      nctx.strokeStyle = '#00d4ff';
+      nctx.lineWidth = 2.5;
+      nctx.shadowColor = '#00d4ff';
+      nctx.shadowBlur = 8;
+    } else if (isActive) {
+      nctx.strokeStyle = 'rgba(0,212,255,0.35)';
+      nctx.lineWidth = 1.5;
+      nctx.shadowBlur = 0;
+    } else {
+      nctx.strokeStyle = 'rgba(94,112,140,0.3)';
+      nctx.lineWidth = 1;
+      nctx.shadowBlur = 0;
+    }
+    nctx.stroke();
+    nctx.shadowBlur = 0;
+
+    // Weight label
+    if (isActive || highlightNodes.includes(c.to)) {
+      const mx = (fn.x + tn.x) / 2;
+      const my = (fn.y + tn.y) / 2;
+      nctx.fillStyle = highlightNodes.includes(c.to) ? '#00d4ff' : 'rgba(0,212,255,0.6)';
+      nctx.font = '10px JetBrains Mono, monospace';
+      nctx.textAlign = 'center';
+      nctx.fillText(c.w, mx, my - 7);
+    }
+  });
+
+  // Draw nodes
+  Object.entries(NODES).forEach(([key, node]) => {
+    const isActive = activeNodes.includes(key);
+    const isHighlight = highlightNodes.includes(key);
+
+    let fillColor = '#0f1724';
+    let strokeColor = '#1e3050';
+    let textColor = '#5c7095';
+    let glow = false;
+
+    if (isHighlight) {
+      fillColor = 'rgba(0,212,255,0.15)';
+      strokeColor = '#00d4ff';
+      textColor = '#00d4ff';
+      glow = true;
+    } else if (isActive) {
+      fillColor = 'rgba(0,212,255,0.06)';
+      strokeColor = 'rgba(0,212,255,0.5)';
+      textColor = '#cdd6f4';
+    }
+
+    if (glow) {
+      nctx.shadowColor = '#00d4ff';
+      nctx.shadowBlur = 18;
+    }
+
+    nctx.beginPath();
+    nctx.arc(node.x, node.y, 22, 0, Math.PI*2);
+    nctx.fillStyle = fillColor;
+    nctx.fill();
+    nctx.strokeStyle = strokeColor;
+    nctx.lineWidth = isHighlight ? 2 : 1.5;
+    nctx.stroke();
+    nctx.shadowBlur = 0;
+
+    // Node label
+    nctx.fillStyle = textColor;
+    nctx.font = `${isHighlight ? '600' : '400'} 11px JetBrains Mono, monospace`;
+    nctx.textAlign = 'center';
+    nctx.textBaseline = 'middle';
+    nctx.fillText(node.label, node.x, node.y);
+
+    // Value below node (output value)
+    const valMap = {
+      x1: currentStep >= 0 ? '0.5' : '',
+      x2: currentStep >= 0 ? '0.3' : '',
+      x0: '1.0',
+      A: currentStep >= 1 ? '0.7631' : '',
+      B: currentStep >= 2 ? '0.6011' : '',
+      Z: currentStep >= 3 ? '0.8327' : '',
+    };
+    if (valMap[key] && isActive) {
+      nctx.fillStyle = key === 'Z' && currentStep >= 3 ? '#00ff9d' : 'rgba(0,212,255,0.7)';
+      nctx.font = '9px JetBrains Mono, monospace';
+      nctx.fillText(valMap[key], node.x, node.y + 33);
+    }
+  });
+
+  // Layer labels
+  nctx.fillStyle = 'rgba(92,112,149,0.6)';
+  nctx.font = '10px JetBrains Mono, monospace';
+  nctx.textAlign = 'center';
+  nctx.fillText('INPUT', 90, 296);
+  nctx.fillText('HIDDEN', 290, 296);
+  nctx.fillText('OUTPUT', 490, 296);
+
+  // Error label if step 4+
+  if (step >= 4) {
+    nctx.fillStyle = '#ff4466';
+    nctx.font = 'bold 12px JetBrains Mono';
+    nctx.textAlign = 'left';
+    nctx.fillText('Error = 0.1673', 540, 170);
+    nctx.fillText('→ Backprop!', 548, 186);
+  }
+}
+
+function updateValues(step) {
+  const updates = valUpdates[step];
+  if (!updates) return;
+  document.querySelectorAll('.val-item').forEach(v => v.classList.remove('highlight','updated'));
+  Object.entries(updates).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = val;
+      el.parentElement.classList.add('highlight');
+    }
+  });
+}
+
+function updateLog(step) {
+  const box = document.getElementById('logBox');
+  box.innerHTML = '';
+  stepData[step].log.forEach(([cls, text]) => {
+    const div = document.createElement('div');
+    div.className = 'log-line' + (cls ? ' ' + cls : '');
+    div.textContent = text;
+    box.appendChild(div);
+  });
+  box.scrollTop = box.scrollHeight;
+}
+
+function updateStepCards(step) {
+  for (let i = 0; i < 6; i++) {
+    const card = document.getElementById('step-' + i);
+    if (!card) continue;
+    card.classList.remove('active','done');
+    if (i === step) card.classList.add('active');
+    else if (i < step) card.classList.add('done');
+  }
+}
+
+function goStep(s) {
+  currentStep = s;
+  drawNetwork(s);
+  updateValues(s);
+  updateLog(s);
+  updateStepCards(s);
+}
+
+function nextStep() {
+  if (currentStep < 5) goStep(currentStep + 1);
+}
+function prevStep() {
+  if (currentStep > 0) goStep(currentStep - 1);
+}
+function resetDemo() {
+  stopAutoPlay();
+  currentStep = 0;
+  goStep(0);
+  document.querySelectorAll('#logBox .log-line').forEach(l => l.remove());
+  const box = document.getElementById('logBox');
+  box.innerHTML = '<div class="log-line">// Press Next → to begin the feedforward pass</div>';
+}
+
+function autoPlay() {
+  if (autoTimer) { stopAutoPlay(); return; }
+  document.getElementById('autoBtn').textContent = '⏸ Pause';
+  autoTimer = setInterval(() => {
+    if (currentStep >= 5) { stopAutoPlay(); return; }
+    nextStep();
+  }, 1600);
+}
+function stopAutoPlay() {
+  clearInterval(autoTimer);
+  autoTimer = null;
+  const btn = document.getElementById('autoBtn');
+  if (btn) btn.textContent = '▶ Auto';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BACKPROPAGATION DEMO
+// ═══════════════════════════════════════════════════════════════
+let bpStep = 0;
+
+const bpStepData = [
+  { highlight: 'Z', log: [
+    ['active', '// Step 1: Compute δZ (Output Node)'],
+    ['active', 'δZ = oZ × (1 − oZ) × (y − oZ)'],
+    ['active', 'δZ = 0.8327 × (1−0.8327) × (1.0−0.8327)'],
+    ['active', 'δZ = 0.8327 × 0.1673 × 0.1673'],
+    ['success', 'δZ = 0.02330'],
+  ], vals: { bdZ: '0.02330' }},
+  { highlight: 'AZ', log: [
+    ['active', '// Step 2: Update weight W_AZ'],
+    ['active', 'ΔW_AZ = η × δZ × oA'],
+    ['active', 'ΔW_AZ = 0.1 × 0.02330 × 0.7631'],
+    ['active', 'ΔW_AZ = 0.001778'],
+    ['success', 'W_AZ_new = 0.9 + 0.001778 = 0.90178'],
+  ], vals: { bWAZ: '0.90178' }},
+  { highlight: 'A', log: [
+    ['active', '// Step 3: Compute δA (Hidden Node A)'],
+    ['active', 'δA = oA × (1−oA) × WAZ × δZ'],
+    ['active', 'δA = 0.7631 × 0.2369 × 0.9 × 0.02330'],
+    ['success', 'δA = 0.003794'],
+    ['', '// Error "flows backward" from output node Z'],
+  ], vals: { bdA: '0.003794' }},
+  { highlight: 'B', log: [
+    ['active', '// Step 4: Compute δB (Hidden Node B)'],
+    ['active', 'δB = oB × (1−oB) × WBZ × δZ'],
+    ['active', 'δB = 0.6011 × 0.3989 × 0.7 × 0.02330'],
+    ['success', 'δB = 0.003903'],
+  ], vals: { bdB: '0.003903' }},
+  { highlight: 'input', log: [
+    ['active', '// Step 5: Update input weights'],
+    ['active', 'ΔW_1A = η × δA × x₁ = 0.1×0.003794×0.5 = 0.000190'],
+    ['success', 'W_1A: 0.5 → 0.50019'],
+    ['active', 'ΔW_1B = η × δB × x₁ = 0.1×0.003903×0.5 = 0.000195'],
+    ['success', 'W_1B: 0.9 → 0.90020'],
+  ], vals: { bW1A: '0.50019', bW1B: '0.90020' }},
+  { highlight: 'all', log: [
+    ['success', '// ✓ One full iteration complete!'],
+    ['', 'All 9 weights have been updated.'],
+    ['', 'Changes are tiny (~0.0002) — this is normal.'],
+    ['', 'After thousands of iterations across many training examples,'],
+    ['success', 'cumulative updates converge to optimal weights.'],
+  ], vals: {}},
+];
+
+function initBpCanvas() {
+  bpCanvas = document.getElementById('bpCanvas');
+  bpCtx = bpCanvas.getContext('2d');
+  drawBpNetwork('none');
+}
+
+function drawBpNetwork(highlight) {
+  if (!bpCtx) return;
+  const W = bpCanvas.width, H = bpCanvas.height;
+  bpCtx.clearRect(0,0,W,H);
+
+  CONNECTIONS.forEach(c => {
+    const fn = NODES[c.from], tn = NODES[c.to];
+    const isHighlight = (highlight === 'AZ' && c.from==='A' && c.to==='Z') ||
+                        (highlight === 'BZ' && c.from==='B' && c.to==='Z') ||
+                        (highlight === 'input' && (c.from==='x0'||c.from==='x1'||c.from==='x2')) ||
+                        (highlight === 'all');
+
+    bpCtx.beginPath();
+    bpCtx.moveTo(fn.x+22, fn.y);
+    bpCtx.lineTo(tn.x-22, tn.y);
+
+    if (isHighlight) {
+      bpCtx.strokeStyle = '#00ff9d';
+      bpCtx.lineWidth = 2.5;
+      bpCtx.shadowColor = '#00ff9d';
+      bpCtx.shadowBlur = 8;
+    } else {
+      bpCtx.strokeStyle = 'rgba(94,112,140,0.25)';
+      bpCtx.lineWidth = 1;
+      bpCtx.shadowBlur = 0;
+    }
+    bpCtx.stroke();
+    bpCtx.shadowBlur = 0;
+  });
+
+  const hlMap = {
+    Z: ['Z'], A: ['A'], B: ['B'],
+    AZ: ['A','Z'], BZ: ['B','Z'],
+    input: ['x0','x1','x2','A','B'],
+    all: ['x0','x1','x2','A','B','Z'],
+    none: [],
+  };
+  const activeNodes = hlMap[highlight] || [];
+
+  Object.entries(NODES).forEach(([key, node]) => {
+    const isHL = activeNodes.includes(key);
+
+    if (isHL) {
+      bpCtx.shadowColor = '#00ff9d';
+      bpCtx.shadowBlur = 16;
+    }
+
+    bpCtx.beginPath();
+    bpCtx.arc(node.x, node.y, 22, 0, Math.PI*2);
+    bpCtx.fillStyle = isHL ? 'rgba(0,255,157,0.15)' : '#0f1724';
+    bpCtx.fill();
+    bpCtx.strokeStyle = isHL ? '#00ff9d' : 'rgba(94,112,140,0.4)';
+    bpCtx.lineWidth = isHL ? 2 : 1.5;
+    bpCtx.stroke();
+    bpCtx.shadowBlur = 0;
+
+    bpCtx.fillStyle = isHL ? '#00ff9d' : '#5c7095';
+    bpCtx.font = `${isHL ? '600' : '400'} 11px JetBrains Mono, monospace`;
+    bpCtx.textAlign = 'center';
+    bpCtx.textBaseline = 'middle';
+    bpCtx.fillText(node.label, node.x, node.y);
+  });
+
+  // Arrow showing direction
+  if (highlight !== 'none') {
+    bpCtx.fillStyle = 'rgba(0,255,157,0.5)';
+    bpCtx.font = '11px JetBrains Mono';
+    bpCtx.textAlign = 'center';
+    bpCtx.fillText('← ERROR FLOWS BACKWARD', 350, 30);
+  }
+
+  bpCtx.fillStyle = 'rgba(92,112,149,0.6)';
+  bpCtx.font = '10px JetBrains Mono';
+  bpCtx.textAlign = 'center';
+  bpCtx.fillText('INPUT', 90, 296);
+  bpCtx.fillText('HIDDEN', 290, 296);
+  bpCtx.fillText('OUTPUT', 490, 296);
+}
+
+function goBpStep(s) {
+  bpStep = s;
+  const data = bpStepData[s];
+  const hlOrder = [null,'Z','AZ','A','B','input','all'];
+  drawBpNetwork(hlOrder[s+1] || 'all');
+
+  // update log
+  const box = document.getElementById('bpLogBox');
+  box.innerHTML = '';
+  data.log.forEach(([cls, text]) => {
+    const div = document.createElement('div');
+    div.className = 'log-line' + (cls ? ' ' + cls : '');
+    div.textContent = text;
+    box.appendChild(div);
+  });
+
+  // update values
+  Object.entries(data.vals).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.textContent = val;
+      el.style.color = 'var(--green)';
+    }
+  });
+
+  // step cards
+  for (let i = 0; i < 6; i++) {
+    const card = document.getElementById('bp-' + i);
+    if (!card) continue;
+    card.classList.remove('active','done');
+    if (i === s) card.classList.add('active');
+    else if (i < s) card.classList.add('done');
+  }
+}
+
+function nextBpStep() { if (bpStep < 5) goBpStep(bpStep + 1); }
+function prevBpStep() { if (bpStep > 0) goBpStep(bpStep - 1); }
+function resetBp() {
+  bpStep = 0;
+  drawBpNetwork('none');
+  document.getElementById('bpLogBox').innerHTML = '<div class="log-line">// Press Next → to begin backpropagation</div>';
+  ['bdZ','bdA','bdB'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = '—'; el.style.color = ''; }
+  });
+  document.getElementById('bWAZ').textContent = '0.9';
+  document.getElementById('bWBZ').textContent = '0.7';
+  document.getElementById('bW0Z').textContent = '0.5';
+  document.getElementById('bW1A').textContent = '0.5';
+  document.getElementById('bW1B').textContent = '0.9';
+  for (let i = 0; i < 6; i++) {
+    const c = document.getElementById('bp-' + i);
+    if (c) { c.classList.remove('active','done'); if(i===0) c.classList.add('active'); }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TRAINING DEMO
+// ═══════════════════════════════════════════════════════════════
+let trainInterval = null;
+let trainEpoch = 0;
+let trainLossHistory = [];
+let valLossHistory = [];
+let lrValue = 0.05;
+let momValue = 0.9;
+let neurValue = 5;
+let dropValue = 0.0;
+
+// XOR dataset
+const XOR_X = [[0,0],[0,1],[1,0],[1,1]];
+const XOR_Y = [0, 1, 1, 0];
+
+// Simple 2-layer neural net for training demo
+let tWeights1, tWeights2, tBias1, tBias2;
+
+function initWeights() {
+  tWeights1 = Array.from({length:neurValue}, () => [Math.random()*2-1, Math.random()*2-1]);
+  tBias1 = Array.from({length:neurValue}, () => Math.random()*0.2-0.1);
+  tWeights2 = Array.from({length:neurValue}, () => Math.random()*2-1);
+  tBias2 = Math.random()*0.2-0.1;
+}
+
+function forwardXOR(x) {
+  const h = tWeights1.map((w,i) => sigmoid(w[0]*x[0] + w[1]*x[1] + tBias1[i]));
+  const out = sigmoid(h.reduce((s,hi,i) => s + tWeights2[i]*hi, tBias2));
+  return { h, out };
+}
+
+function trainOneEpoch() {
+  let totalLoss = 0;
+  const lr = lrValue;
+
+  XOR_X.forEach((x, idx) => {
+    const y = XOR_Y[idx];
+    const { h, out } = forwardXOR(x);
+    totalLoss += (y - out) ** 2;
+
+    // Dropout mask
+    const mask = tWeights1.map(() => Math.random() > dropValue ? 1 : 0);
+
+    // Output delta
+    const dOut = out * (1 - out) * (y - out);
+    tBias2 += lr * dOut;
+
+    // Hidden deltas
+    tWeights1.forEach((w, i) => {
+      if (!mask[i]) return;
+      const dH = h[i] * (1 - h[i]) * tWeights2[i] * dOut;
+      tWeights2[i] += lr * dOut * h[i];
+      tWeights1[i][0] += lr * dH * x[0];
+      tWeights1[i][1] += lr * dH * x[1];
+      tBias1[i] += lr * dH;
+    });
+  });
+  return totalLoss / 4;
+}
+
+function computeAccuracy() {
+  let correct = 0;
+  XOR_X.forEach((x,i) => {
+    const { out } = forwardXOR(x);
+    if ((out >= 0.5) === (XOR_Y[i] === 1)) correct++;
+  });
+  return correct / 4;
+}
+
+function updateLR(v) { lrValue = v / 100; document.getElementById('lrVal').textContent = lrValue.toFixed(3); }
+function updateMom(v) { momValue = v / 10; document.getElementById('momVal').textContent = momValue.toFixed(2); }
+function updateNeur(v) { neurValue = parseInt(v); document.getElementById('neurVal').textContent = v; }
+function updateDrop(v) { dropValue = v / 10; document.getElementById('dropVal').textContent = dropValue.toFixed(1); }
+
+function startTraining() {
+  if (trainInterval) return;
+  if (trainEpoch === 0) initWeights();
+  document.getElementById('trainBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
+
+  trainInterval = setInterval(() => {
+    // Run multiple steps per frame for smoothness
+    for (let i=0;i<3;i++) {
+      const loss = trainOneEpoch();
+      const valLoss = loss + (Math.random()-0.5)*loss*0.3;
+      trainLossHistory.push(loss);
+      valLossHistory.push(Math.max(0, valLoss));
+      trainEpoch++;
+    }
+
+    const lastLoss = trainLossHistory[trainLossHistory.length-1];
+    const lastVal = valLossHistory[valLossHistory.length-1];
+    const acc = computeAccuracy();
+
+    document.getElementById('epochStat').textContent = trainEpoch;
+    document.getElementById('lossStat').textContent = lastLoss.toFixed(4);
+    document.getElementById('valLossStat').textContent = lastVal.toFixed(4);
+    document.getElementById('accStat').textContent = (acc * 100).toFixed(0) + '%';
+
+    drawLossChart();
+    logTraining(trainEpoch, lastLoss, lastVal, acc);
+
+    if (trainEpoch >= 400) stopTraining();
+  }, 50);
+}
+
+function stopTraining() {
+  clearInterval(trainInterval);
+  trainInterval = null;
+  document.getElementById('trainBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
+  const log = document.getElementById('trainLog');
+  const div = document.createElement('div');
+  div.className = 'log-line success';
+  div.textContent = `// Training stopped at epoch ${trainEpoch}`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function resetTraining() {
+  stopTraining();
+  trainEpoch = 0;
+  trainLossHistory = [];
+  valLossHistory = [];
+  document.getElementById('epochStat').textContent = '0';
+  document.getElementById('lossStat').textContent = '—';
+  document.getElementById('valLossStat').textContent = '—';
+  document.getElementById('accStat').textContent = '—';
+  const log = document.getElementById('trainLog');
+  log.innerHTML = '<div class="log-line">// Adjust hyperparameters above, then press Train</div><div class="log-line">// Dataset: XOR classification (4 samples, non-linearly separable)</div>';
+  const c = document.getElementById('lossCanvas');
+  if (c) { const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); }
+}
+
+function drawLossChart() {
+  const canvas = document.getElementById('lossCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  // Background
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0,0,W,H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(30,48,80,0.8)';
+  ctx.lineWidth = 1;
+  for (let i=0;i<=4;i++) {
+    const y = 15 + (H-30) * i/4;
+    ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(W-10,y); ctx.stroke();
+  }
+
+  const maxLoss = Math.max(...trainLossHistory, 0.3);
+  const data = trainLossHistory;
+  const vdata = valLossHistory;
+
+  const drawLine = (arr, color) => {
+    if (arr.length < 2) return;
+    ctx.beginPath();
+    arr.forEach((v, i) => {
+      const x = 40 + (i / (Math.max(arr.length-1,1))) * (W-50);
+      const y = 15 + (1 - v/maxLoss) * (H-30);
+      i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 4;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  };
+
+  drawLine(data, '#00d4ff');
+  drawLine(vdata, '#ff7b3a');
+
+  // Axes
+  ctx.fillStyle = '#5c7095';
+  ctx.font = '9px JetBrains Mono';
+  ctx.textAlign = 'right';
+  [0,0.25,0.5,0.75,1].forEach((f,i) => {
+    const v = (maxLoss * (1-f)).toFixed(2);
+    const y = 15 + f*(H-30);
+    ctx.fillText(v, 36, y+3);
+  });
+  ctx.textAlign = 'center';
+  ctx.fillText('0', 40, H-2);
+  ctx.fillText(trainEpoch, W-10, H-2);
+  ctx.fillText('Epoch', (W+40)/2, H-2);
+}
+
+function logTraining(epoch, loss, val, acc) {
+  if (epoch % 30 !== 0) return;
+  const log = document.getElementById('trainLog');
+  const div = document.createElement('div');
+  div.className = 'log-line' + (acc >= 1 ? ' success' : epoch > 200 ? ' warn' : '');
+  div.innerHTML = `Epoch ${String(epoch).padStart(4,' ')} | Loss: <span>${loss.toFixed(4)}</span> | Val: <span>${val.toFixed(4)}</span> | Acc: <span>${(acc*100).toFixed(0)}%</span>`;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function initTraining() {
+  const canvas = document.getElementById('lossCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#080c14';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#5c7095';
+  ctx.font = '12px JetBrains Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText('Press ▶ Train to begin', canvas.width/2, canvas.height/2);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  // Feedforward initialized on tab click
+  // Pre-warm values display
+  document.getElementById('vx1').textContent = '—';
+});
+</script>
+</body>
+</html>
